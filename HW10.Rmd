@@ -1,0 +1,127 @@
+---
+title: "STAT 537 HW 10"
+author: "Doug Anderson and Brandon Fenton"
+date: "Due April 28, 2016"
+output:
+  pdf_document: default
+  fig_width: 8
+  fig_height: 5
+  word_document: null
+---
+
+Part 1: Classification Trees for the diagnosis of Mild Osteoarthritis using genetic information. 
+
+In Marshall et al. (http://www.sciencedirect.com/science/article/pii/S1063458405001524), they use logistic regression models to build and then validate (to some degree) a predictor for osteoarthritis/not using a set of genetic markers. Read the paper to answer the following questions.
+
+Read the paper, focusing on the statistical aspects of their work.
+
+1) Fit their top ranked model from Supplemental Table 5. Make effects plots for the resulting estimated model using the following code.
+```{r p1_a} 
+marsh1 <- read.csv("http://dl.dropboxusercontent.com/u/77307195/marshalcomb.csv",header=T)
+View(marsh1)
+summary(marsh1)
+marsh1R<-marsh1[,-c(1,2,3,4,5,6,8)]
+
+#Fit the model and call it glm1
+
+require(effects)
+plot(allEffects(glm1),rescale=F) 
+```
+
+2) They use logit values above or below 0 to predict whether an observation is diseased or not (below equation 1). Explain that choice.
+
+3) In the section on page 865 “Reference data set (AD1F2) for the best gene combinations” describe the type of modeling/model selection they are considering. Supplement table 5 contains more details of the results of this process.
+
+4) Describe what they are doing in the section “Prospective (Blind) test” starting on page 864. Use terminology from JWHT.
+
+5) Fit a classification tree using rpart using all 9 of the genetic variables listed below using minbucket=4 and cp=0.000000001 as in the code below. Prune the tree using the Min CV rule after consulting multiple calls to printcp() and plotcp(). Do not load mvpart before doing this problem. Discuss the results of your CV process and how you chose your tree size. 
+
+
+```{r p5_a}
+tree1<-rpart(factor(D2)~.,data=marsh1R,cp=0.000000001,minbucket=4)
+
+# You can also see the Min CV choice in repeated calls using:
+ret <- rep(NA, 100)
+for (i in 1:100) {
+tree1 <- rpart(factor(D2) ~ ., data = marsh1R, cp = 1e-09, minbucket = 4)
+a <- printcp(tree1)
+ret[i] <- which(a[, 4] == min(a[, 4]))
+}
+```
+
+6) Based on these results, choose two different sized trees that could be reasonable based on the different CV selections. Report a plot of your two pruned classification trees using the partykit’s plot(as.party(PRUNEDTREENAME)). Discuss the differences in the two trees.
+
+```{r p6_a}
+
+```
+
+7) Adjust the following code as needed to make a plot of the predictions from the three models. Use these results to discuss the differences in these approaches/results. I had models called tree1p, tree2p, and glm1.
+
+```{r p7_a}
+fits<-data.frame(RPARTTREE1=predict(tree1p)[,2], RPARTTREE2=predict(tree2p)[,2],GLM1=predict(glm1,type="response"))
+plot(fits)
+```
+
+8) The predictor variables were log10-transformed. Generally discuss how this impacts the tree-based approach vs the GLM approach. You can either undo their transformations and refit models or just discuss the impacts based on thinking about how the models work and why they might have done this transformation initially.
+
+```{r p8_a}
+
+```
+
+Part 2: Use the following code to identify an optimal predictive model for first year college GPAs. The following code will split out half the observations into a training data set and fit two different conditional inference trees using all available predictors. It also fits a recursive partitioning tree. 
+
+9) Prune the tree using the 1SE and Min CV rules (either from a single 10-fold CV run or select a tree size for each as a consensus that you build from multiple CV runs). 
+
+```{r p9_a}
+
+```
+
+10) Calculate and compare the validation error for the 4 models using the withheld responses and discuss the choice of significance threshold and CV rule.
+
+```{r p10_a}
+require(rpart)
+require(party)
+require(partykit)
+require(openintro)
+data(satGPA)
+?satGPA
+
+set.seed(123456) #So that you can repeat the running of the code and get the same results
+train=sample(1:1000,size=500)
+ctree1<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.95)
+ctree2<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.9)
+rpart_full<-rpart(FYGPA~.,data=satGPA[train,],cp=0.00000001)
+printcp(rpart2)
+plotcp(rpart2)
+
+#Do your own pruning and put results into rpart21SE and rpart2MinCV
+predict(ctree1,newdata=satGPA[-train,])
+predict(ctree2,newdata=satGPA[-train,])
+predict(rpart21SE,newdata=satGPA[-train,])
+predict(rpart2MinCV,newdata=satGPA[-train,])
+```
+
+## R Code Appendix:
+Problem 1:
+```{r a1, ref.label='p1_a', eval=F, echo=T}
+```
+
+Problem 5:
+```{r a5, ref.label='p5_a', eval=F, echo=T}
+```
+
+Problem 6:
+```{r a6, ref.label='p6_a', eval=F, echo=T}
+```
+
+Problem 8:
+```{r a8, ref.label='p8_a', eval=F, echo=T}
+```
+
+Problem 9:
+```{r a9, ref.label='p9_a', eval=F, echo=T}
+```
+
+Problem 10:
+```{r a10, ref.label='p10_a', eval=F, echo=T}
+```
