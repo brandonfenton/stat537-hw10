@@ -17,7 +17,7 @@ Read the paper, focusing on the statistical aspects of their work.
 
 1) Fit their top ranked model from Supplemental Table 5. Make effects plots for the resulting estimated model using the following code.
 ```{r p1_a} 
-marsh1 <- read.csv("http://dl.dropboxusercontent.com/u/77307195/marshalcomb.csv",header=T)
+marsh1 <- read.csv("marshalcomb.csv",header=T)
 # View(marsh1)
 # summary(marsh1)
 marsh1R<-marsh1[,-c(1,2,3,4,5,6,8)]
@@ -28,22 +28,32 @@ summary(marsh1R)
 glm1 <- glm(D2~G2AN+HSPCA+IL13RA1+LAMC1+MAFB+PF4+TNFAIP6, 
             data=marsh1R, family=binomial(link = "logit"))
 
+
+
 require(effects)
 plot(allEffects(glm1),rescale=F) 
 ```
 
 2) They use logit values above or below 0 to predict whether an observation is diseased or not (below equation 1). Explain that choice.
 
+$logit(p) = log(\frac{p}{1-p})$, and $log(\frac{0.5}{1-0.5}) =log(1)=0$, so they are using a probability of 0.5 as the decision boundary for concluding the predicted diagnosis.  This is the typical value used as a cutoff in logistic regression.
+
 3) In the section on page 865 “Reference data set (AD1F2) for the best gene combinations” describe the type of modeling/model selection they are considering. Supplement table 5 contains more details of the results of this process.
 
+All of the 511 possible biomarker combinations were fit as models and compared using ROC curves.  68 models which were "well-behaved" TODO in logistic regression and had ROC AUC values higher than 0.90 were retained for use on the test set.
+
 4) Describe what they are doing in the section “Prospective (Blind) test” starting on page 864. Use terminology from JWHT.
+
+This section describes their test set, which was used to assess the performance of the model fit on the training set, AD1F2.  Separate test sets are used so as to gauge the generalizability of a model's predictive ability, since an overfit model would perform well on its test set but not other data.
 
 5) Fit a classification tree using rpart using all 9 of the genetic variables listed below using minbucket=4 and cp=0.000000001 as in the code below. Prune the tree using the Min CV rule after consulting multiple calls to printcp() and plotcp(). Do not load mvpart before doing this problem. Discuss the results of your CV process and how you chose your tree size. 
 
 
-```{r p5_a}
+```{r p5_a, message=F}
 require(rpart)
+
 tree1<-rpart(factor(D2)~.,data=marsh1R,cp=0.000000001,minbucket=4)
+plotcp(tree1)
 
 # You can also see the Min CV choice in repeated calls using:
 ret <- rep(NA, 100)
@@ -52,7 +62,13 @@ tree1 <- rpart(factor(D2) ~ ., data = marsh1R, cp = 1e-09, minbucket = 4)
 a <- printcp(tree1)
 ret[i] <- which(a[, 4] == min(a[, 4]))
 }
+
+require(pander)
+
+pander(table(ret))
 ```
+
+
 
 6) Based on these results, choose two different sized trees that could be reasonable based on the different CV selections. Report a plot of your two pruned classification trees using the partykit’s plot(as.party(PRUNEDTREENAME)). Discuss the differences in the two trees.
 
@@ -63,8 +79,8 @@ ret[i] <- which(a[, 4] == min(a[, 4]))
 7) Adjust the following code as needed to make a plot of the predictions from the three models. Use these results to discuss the differences in these approaches/results. I had models called tree1p, tree2p, and glm1.
 
 ```{r p7_a}
-fits<-data.frame(RPARTTREE1=predict(tree1p)[,2], RPARTTREE2=predict(tree2p)[,2],GLM1=predict(glm1,type="response"))
-plot(fits)
+# fits<-data.frame(RPARTTREE1=predict(tree1p)[,2], RPARTTREE2=predict(tree2p)[,2],GLM1=predict(glm1,type="response"))
+# plot(fits)
 ```
 
 8) The predictor variables were log10-transformed. Generally discuss how this impacts the tree-based approach vs the GLM approach. You can either undo their transformations and refit models or just discuss the impacts based on thinking about how the models work and why they might have done this transformation initially.
@@ -96,14 +112,14 @@ train=sample(1:1000,size=500)
 ctree1<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.95)
 ctree2<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.9)
 rpart_full<-rpart(FYGPA~.,data=satGPA[train,],cp=0.00000001)
-printcp(rpart2)
-plotcp(rpart2)
+# printcp(rpart2)
+# plotcp(rpart2)
 
 #Do your own pruning and put results into rpart21SE and rpart2MinCV
-predict(ctree1,newdata=satGPA[-train,])
-predict(ctree2,newdata=satGPA[-train,])
-predict(rpart21SE,newdata=satGPA[-train,])
-predict(rpart2MinCV,newdata=satGPA[-train,])
+# predict(ctree1,newdata=satGPA[-train,])
+# predict(ctree2,newdata=satGPA[-train,])
+# predict(rpart21SE,newdata=satGPA[-train,])
+# predict(rpart2MinCV,newdata=satGPA[-train,])
 ```
 
 ## R Code Appendix:
