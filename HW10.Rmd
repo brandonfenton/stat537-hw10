@@ -25,7 +25,7 @@ summary(marsh1R)
 
 #Fit the model and call it glm1
 ## I thought this was right but numbers don't match
-glm1 <- glm(D2~G2AN+HSPCA+IL13RA1+LAMC1+MAFB+PF4+TNFAIP6, 
+glm1 <- glm(D2~G2AN+IKBKAP+IL13RA1+LAMC1+MAFB+PF4+TNFAIP6, 
             data=marsh1R, family=binomial(link = "logit"))
 
 
