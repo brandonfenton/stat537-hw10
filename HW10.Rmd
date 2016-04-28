@@ -230,6 +230,12 @@ Problem 5:
 ```{r a5, ref.label='p5_a', eval=F, echo=T}
 ```
 
+```{r a5b, ref.label='p5_b', eval=F, echo=T}
+```
+
+```{r a5c, ref.label='p5_c', eval=F, echo=T}
+```
+
 Problem 6:
 ```{r a6, ref.label='p6_a', eval=F, echo=T}
 ```
