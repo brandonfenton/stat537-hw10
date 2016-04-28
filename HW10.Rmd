@@ -14,29 +14,28 @@ require(party)
 require(partykit)
 require(openintro)
 require(pander)
+
+# In Marshall et al. (http://www.sciencedirect.com/science/article/pii/S1063458405001524), they use logistic regression models to build and then validate (to some degree) a predictor for osteoarthritis/not using a set of genetic markers. Read the paper to answer the following questions.
+# 
+# Read the paper, focusing on the statistical aspects of their work.
 ```
 
 Part 1: Classification Trees for the diagnosis of Mild Osteoarthritis using genetic information. 
 
-In Marshall et al. (http://www.sciencedirect.com/science/article/pii/S1063458405001524), they use logistic regression models to build and then validate (to some degree) a predictor for osteoarthritis/not using a set of genetic markers. Read the paper to answer the following questions.
-
-Read the paper, focusing on the statistical aspects of their work.
-
 1) Fit their top ranked model from Supplemental Table 5. Make effects plots for the resulting estimated model using the following code.
-```{r p1_a, echo=F, fig.height=10, fig.width=10} 
+
+```{r p1_a, echo=F, fig.height=10, fig.width=10, warning=F, message=F} 
 set.seed(888)
 marsh1 <- read.csv("marshalcomb.csv",header=T)
 # View(marsh1)
 # summary(marsh1)
 marsh1R<-marsh1[,-c(1,2,3,4,5,6,8)]
-summary(marsh1R)
+# summary(marsh1R)
 
 #Fit the model and call it glm1
 ## I thought this was right but numbers don't match
 glm1 <- glm(D2~G2AN+IKBKAP+IL13RA1+LAMC1+MAFB+PF4+TNFAIP6, 
             data=marsh1R, family=binomial(link = "logit"))
-
-
 
 require(effects)
 plot(allEffects(glm1),type="link") 
@@ -44,7 +43,7 @@ plot(allEffects(glm1),type="link")
 
 2) They use logit values above or below 0 to predict whether an observation is diseased or not (below equation 1). Explain that choice.
 
-$logit(p) = log(\frac{p}{1-p})$, and $log(\frac{0.5}{1-0.5}) =log(1)=0$, so they are using a probability of 0.5 as the decision boundary for concluding the predicted diagnosis.  This is the typical value used as a cutoff in logistic regression.
+$\text{logit}(p) = \log(\frac{p}{1-p})$, and $\log(\frac{0.5}{1-0.5}) =\log(1)=0$, so they are using a probability of 0.5 as the decision boundary for concluding the predicted diagnosis.  This is the typical value used as a cutoff in logistic regression.
 
 3) In the section on page 865 “Reference data set (AD1F2) for the best gene combinations” describe the type of modeling/model selection they are considering. Supplement table 5 contains more details of the results of this process.
 
@@ -80,11 +79,12 @@ require(pander)
 
 ret.tab <- table(ret)
 # emphasize.strong.cells(which.max(ret.tab, arr.ind=T))
-emphasize.strong.cols(2)
+emphasize.strong.cols(1)
 # TODO fix this
 pander(ret.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
 ```
 
+Based on 100 recursive partitions (results in Table 1), it seems that trees of size 2 (one split) and size 6 (5 splits) would be appropriate for this data in obtaining the min-CV.
 
 
 6) Based on these results, choose two different sized trees that could be reasonable based on the different CV selections. Report a plot of your two pruned classification trees using the partykit’s plot(as.party(PRUNEDTREENAME)). Discuss the differences in the two trees.
