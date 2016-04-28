@@ -8,6 +8,13 @@ output:
   fig_height: 5
   word_document: null
 ---
+```{r setup, echo=F, warning=F, message=F}
+require(rpart)
+require(party)
+require(partykit)
+require(openintro)
+require(pander)
+```
 
 Part 1: Classification Trees for the diagnosis of Mild Osteoarthritis using genetic information. 
 
@@ -16,7 +23,8 @@ In Marshall et al. (http://www.sciencedirect.com/science/article/pii/S1063458405
 Read the paper, focusing on the statistical aspects of their work.
 
 1) Fit their top ranked model from Supplemental Table 5. Make effects plots for the resulting estimated model using the following code.
-```{r p1_a} 
+```{r p1_a, echo=F, fig.height=10, fig.width=10} 
+set.seed(888)
 marsh1 <- read.csv("marshalcomb.csv",header=T)
 # View(marsh1)
 # summary(marsh1)
@@ -31,7 +39,7 @@ glm1 <- glm(D2~G2AN+IKBKAP+IL13RA1+LAMC1+MAFB+PF4+TNFAIP6,
 
 
 require(effects)
-plot(allEffects(glm1),rescale=F) 
+plot(allEffects(glm1),type="link") 
 ```
 
 2) They use logit values above or below 0 to predict whether an observation is diseased or not (below equation 1). Explain that choice.
@@ -49,43 +57,90 @@ This section describes their test set, which was used to assess the performance 
 5) Fit a classification tree using rpart using all 9 of the genetic variables listed below using minbucket=4 and cp=0.000000001 as in the code below. Prune the tree using the Min CV rule after consulting multiple calls to printcp() and plotcp(). Do not load mvpart before doing this problem. Discuss the results of your CV process and how you chose your tree size. 
 
 
-```{r p5_a, message=F}
+```{r p5_a, message=F, echo=F, warning=F}
 require(rpart)
 
 tree1<-rpart(factor(D2)~.,data=marsh1R,cp=0.000000001,minbucket=4)
 plotcp(tree1)
 
+```
+
+```{r p5_b, message=F, echo=F, warning=F, include=F}
 # You can also see the Min CV choice in repeated calls using:
 ret <- rep(NA, 100)
 for (i in 1:100) {
-tree1 <- rpart(factor(D2) ~ ., data = marsh1R, cp = 1e-09, minbucket = 4)
-a <- printcp(tree1)
-ret[i] <- which(a[, 4] == min(a[, 4]))
+  tree1 <- rpart(factor(D2) ~ ., data = marsh1R, cp = 1e-09, minbucket = 4)
+  a <- printcp(tree1)
+  ret[i] <- a[which(a[, 4] == min(a[, 4])), 2] + 1
 }
+```
 
+```{r p5_c, message=F, echo=F, warning=F}
 require(pander)
 
-pander(table(ret))
+ret.tab <- table(ret)
+# emphasize.strong.cells(which.max(ret.tab, arr.ind=T))
+# TODO fix this
+pander(ret.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
 ```
 
 
 
 6) Based on these results, choose two different sized trees that could be reasonable based on the different CV selections. Report a plot of your two pruned classification trees using the partykit’s plot(as.party(PRUNEDTREENAME)). Discuss the differences in the two trees.
 
-```{r p6_a}
+```{r p6_a, echo=F, fig.height=10, fig.width=10}
+# One split
+tree1p<-rpart(factor(D2)~.,data=marsh1R,cp=0.19, minbucket=4)
 
+# Five splits
+tree2p<-rpart(factor(D2)~.,data=marsh1R,cp=0.039, minbucket=4)
+
+plot(as.party(tree1p))
+plot(as.party(tree2p))
 ```
+The size 6 (or 5 splits) tree has four more splits than the size 2 tree.  Both start with a split on PF4 at 6.373, but the second tree contains four splits on LAMC1 (11.665), IKBKAP (9.389), MAFB (7.794) and EGR1 (8.485) in that order on the branch the tree corresponding to PF4 values less than 6.373. While both trees have produced impure classifications, purity is generally higher in the 5-split tree.
 
 7) Adjust the following code as needed to make a plot of the predictions from the three models. Use these results to discuss the differences in these approaches/results. I had models called tree1p, tree2p, and glm1.
 
-```{r p7_a}
-# fits<-data.frame(RPARTTREE1=predict(tree1p)[,2], RPARTTREE2=predict(tree2p)[,2],GLM1=predict(glm1,type="response"))
-# plot(fits)
+```{r p7_a, echo=F, fig.height=10, fig.width=10}
+ fits<-data.frame(ONESPLIT=predict(tree1p)[,2], FIVESPLITS=predict(tree2p)[,2],GLM1=predict(glm1,type="response"))
+
+ 
+
+ 
+ fits.tab <- apply(fits,2,function(x) mean(x>0.5))
+ names(fits.tab) <- c("One Split", "Five Splits", "GLM Fit")
+ pander(fits.tab, caption="Proportion of predicted diagnoses for two classification trees and a GLM model")
 ```
+
+```{r p7_b, echo=F}
+  plot(fits)
+```
+
+The glm is predicting a possibly unique probability for each observation, while the trees predict one of either two or six discrete probabilities depending on the tree size, as evidenced by the scatterplot matrix.  However, the proportions of diagnoses predicted by the five-split tree and the glm fit are closer than either proportion is to the proportion predicted by the one-split tree.  
 
 8) The predictor variables were log10-transformed. Generally discuss how this impacts the tree-based approach vs the GLM approach. You can either undo their transformations and refit models or just discuss the impacts based on thinking about how the models work and why they might have done this transformation initially.
 
-```{r p8_a}
+Log transformations are used when regressing on right-skewed data, in order to satisfy the assumptions necessary to apply a generalized linear model.  Tree-based methods do not rely on the same assumptions and are less influenced by a lack of normality, since split points can easily be placed at any arbitrary locations.  If we refit the same three models compared in problem 6 with back-transformed predictors, the trees produce equivalent results (the split points are the same as in the first trees if log10-transformed) but the GLM's proportion of predicted diagnoses has dropped by almost 0.05.
+
+```{r p8_a, fig.height=10, fig.width=10, echo=F}
+exp.dat <- data.frame(cbind(D2 = marsh1R$D2, apply(marsh1R[,2:10], 2, function(x) 10^x)))
+
+tree3p<-rpart(factor(D2)~.,data=exp.dat,cp=0.19, minbucket=4)
+plot(as.party(tree3p))
+
+tree4p<-rpart(factor(D2)~.,data=exp.dat,cp=0.039, minbucket=4)
+plot(as.party(tree4p))
+
+glm2 <- glm(D2~G2AN+IKBKAP+IL13RA1+LAMC1+MAFB+PF4+TNFAIP6, 
+            data=exp.dat, family=binomial(link = "logit"))
+```
+
+```{r p8_b, fig.height=10, fig.width=10}
+fits.exp<-data.frame(ONESPLIT=predict(tree3p)[,2], FIVESPLITS=predict(tree4p)[,2],GLM2=predict(glm2,type="response"))
+exp.tab <- apply(fits.exp,2,function(x) mean(x>0.5))
+names(exp.tab) <- c("One Split", "Five Splits", "GLM Fit")
+pander(exp.tab, caption="Proportion of predicted diagnoses models using untransformed predictors") 
 
 ```
 
@@ -93,19 +148,50 @@ Part 2: Use the following code to identify an optimal predictive model for first
 
 9) Prune the tree using the 1SE and Min CV rules (either from a single 10-fold CV run or select a tree size for each as a consensus that you build from multiple CV runs). 
 
-```{r p9_a}
+```{r p9_a, include=F}
+data(satGPA)
 
+gpa.tree <- rpart(FYGPA ~ ., data = satGPA, cp = 1e-09, minbucket = 4)
+
+mcv.sizes <- rep(NA, 100)
+ose.sizes <- rep(NA, 100)
+
+for (i in 1:100) {
+  gpa.tree <- rpart(FYGPA ~ ., data = satGPA, cp = 1e-09, minbucket = 4)
+  a <- printcp(gpa.tree)
+  mincv <- a[which(a[, 4] == min(a[, 4])), 4]
+  mincv.se <- a[which(a[, 4] == mincv), 5]
+  mcv.sizes[i] <- a[which(a[, 4] == mincv), 2] + 1
+  ose.sizes[i] <- a[which(a[, 4] < mincv + mincv.se), 2][1] + 1
+}
 ```
+
+```{r p9_b, echo=F, fig.height=10, fig.width=20}
+plotcp(gpa.tree)
+```
+
+A call to __plotcp()__ on one tree fit suggests that a tree size of 5 should be used by the 1-SE rule, and a tree size of 11 should be used by the min-CV rule.  Fitting 100 cross-validated recursive partitions provides further support for these sizes:
+
+```{r p9_c, echo=F}
+mcv.tab <- table(mcv.sizes)
+ose.tab <- table(ose.sizes)
+
+pander(mcv.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
+pander(ose.tab, caption="Tree sizes determined by the 1-SE rule out of 100 recursive partitions")
+
+gpa.ose <-rpart(FYGPA~.,data=satGPA,cp=1.5e-02, minbucket=4)
+gpa.mcv <-rpart(FYGPA~.,data=satGPA,cp=5.9734e-03, minbucket=4)
+```
+
+```{r p9_d, echo=F, fig.height=10, fig.width=10}
+plot(as.party(gpa.ose))
+plot(as.party(gpa.mcv))
+```
+
 
 10) Calculate and compare the validation error for the 4 models using the withheld responses and discuss the choice of significance threshold and CV rule.
 
 ```{r p10_a}
-require(rpart)
-require(party)
-require(partykit)
-require(openintro)
-data(satGPA)
-?satGPA
 
 set.seed(123456) #So that you can repeat the running of the code and get the same results
 train=sample(1:1000,size=500)
