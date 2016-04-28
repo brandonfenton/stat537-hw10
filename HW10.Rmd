@@ -80,6 +80,7 @@ require(pander)
 
 ret.tab <- table(ret)
 # emphasize.strong.cells(which.max(ret.tab, arr.ind=T))
+emphasize.strong.cols(2)
 # TODO fix this
 pander(ret.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
 ```
@@ -150,14 +151,20 @@ Part 2: Use the following code to identify an optimal predictive model for first
 
 ```{r p9_a, include=F}
 data(satGPA)
+set.seed(123456) #So that you can repeat the running of the code and get the same results
+train=sample(1:1000,size=500)
+ctree1<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.95)
+ctree2<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.9)
 
-gpa.tree <- rpart(FYGPA ~ ., data = satGPA, cp = 1e-09, minbucket = 4)
+# rpart_full<-rpart(FYGPA~.,data=satGPA[train,],cp=0.00000001)
+
+gpa.tree <- rpart(FYGPA ~ ., data = satGPA[train,], cp = 1e-09)
 
 mcv.sizes <- rep(NA, 100)
 ose.sizes <- rep(NA, 100)
 
 for (i in 1:100) {
-  gpa.tree <- rpart(FYGPA ~ ., data = satGPA, cp = 1e-09, minbucket = 4)
+  gpa.tree <- rpart(FYGPA ~ ., data = satGPA[train,], cp = 1e-09)
   a <- printcp(gpa.tree)
   mincv <- a[which(a[, 4] == min(a[, 4])), 4]
   mincv.se <- a[which(a[, 4] == mincv), 5]
@@ -170,7 +177,7 @@ for (i in 1:100) {
 plotcp(gpa.tree)
 ```
 
-A call to __plotcp()__ on one tree fit suggests that a tree size of 5 should be used by the 1-SE rule, and a tree size of 11 should be used by the min-CV rule.  Fitting 100 cross-validated recursive partitions provides further support for these sizes:
+A call to __plotcp()__ on one tree fit suggests that a tree size of 4 should be used by the 1-SE rule, and a tree size of 6 should be used by the min-CV rule.  Fitting 100 cross-validated recursive partitions provides support for sizes of 4 and somewhere between 7 and 9 by the two rules:
 
 ```{r p9_c, echo=F}
 mcv.tab <- table(mcv.sizes)
@@ -179,34 +186,40 @@ ose.tab <- table(ose.sizes)
 pander(mcv.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
 pander(ose.tab, caption="Tree sizes determined by the 1-SE rule out of 100 recursive partitions")
 
-gpa.ose <-rpart(FYGPA~.,data=satGPA,cp=1.5e-02, minbucket=4)
-gpa.mcv <-rpart(FYGPA~.,data=satGPA,cp=5.9734e-03, minbucket=4)
+gpa.ose <-rpart(FYGPA~.,data=satGPA,cp=3e-02)
+gpa.mcv <-rpart(FYGPA~.,data=satGPA,cp=1.002519e-02)
 ```
+
+The original tree size chosen by the min-CV rule was 9, but producing a size 9 tree proved very difficult and so a size of 8 was used instead.  This seems reasonable given the large numbers of min-CV values associated with sizes 7 and 9 in the results from the 100 recursive partitions generated.
 
 ```{r p9_d, echo=F, fig.height=10, fig.width=10}
 plot(as.party(gpa.ose))
 plot(as.party(gpa.mcv))
 ```
 
-
 10) Calculate and compare the validation error for the 4 models using the withheld responses and discuss the choice of significance threshold and CV rule.
 
-```{r p10_a}
-
-set.seed(123456) #So that you can repeat the running of the code and get the same results
-train=sample(1:1000,size=500)
-ctree1<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.95)
-ctree2<-ctree(FYGPA~.,data=satGPA[train,],mincriterion=0.9)
-rpart_full<-rpart(FYGPA~.,data=satGPA[train,],cp=0.00000001)
-# printcp(rpart2)
-# plotcp(rpart2)
+```{r p10_a, echo=F}
 
 #Do your own pruning and put results into rpart21SE and rpart2MinCV
-# predict(ctree1,newdata=satGPA[-train,])
-# predict(ctree2,newdata=satGPA[-train,])
-# predict(rpart21SE,newdata=satGPA[-train,])
-# predict(rpart2MinCV,newdata=satGPA[-train,])
+pred.t1 <- predict(ctree1,newdata=satGPA[-train,])
+pred.t2 <- predict(ctree2,newdata=satGPA[-train,])
+pred.ose <- predict(gpa.ose,newdata=satGPA[-train,])
+pred.mcv <- predict(gpa.mcv,newdata=satGPA[-train,])
+
+mse.t1 <- mean((satGPA[-train,]$FYGPA - pred.t1)^2)
+mse.t2 <- mean((satGPA[-train,]$FYGPA - pred.t2)^2)
+mse.ose <- mean((satGPA[-train,]$FYGPA - pred.ose)^2)
+mse.mcv <- mean((satGPA[-train,]$FYGPA - pred.mcv)^2)
+
+mse.tab <- cbind(mse.t1, mse.t2, mse.ose, mse.mcv)
+
+colnames(mse.tab) <- c("mincriterion=0.95", "mincriterion=0.90", "1-SE", "Min-CV")
+emphasize.strong.cells(which(mse.tab==min(mse.tab), arr.ind=TRUE))
+pander(mse.tab)
 ```
+
+The min-CV tree produced the smallest test error with an MSE of 0.3506.  The largest MSE value, associated with the mincriterion=0.95 fit, was 0.3898.  This does not represent a large difference, so it would appear that all four methods produce similarly-performing results for these data.
 
 ## R Code Appendix:
 Problem 1:
