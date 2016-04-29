@@ -1,7 +1,7 @@
 ---
 title: "STAT 537 HW 10"
 author: "Doug Anderson and Brandon Fenton"
-date: "Due April 28, 2016"
+date: "Due April 29th, 2016"
 output:
   pdf_document: default
   fig_width: 8
@@ -41,13 +41,15 @@ require(effects)
 plot(allEffects(glm1),type="link") 
 ```
 
+\pagebreak
+
 2) They use logit values above or below 0 to predict whether an observation is diseased or not (below equation 1). Explain that choice.
 
 $\text{logit}(p) = \log(\frac{p}{1-p})$, and $\log(\frac{0.5}{1-0.5}) =\log(1)=0$, so they are using a probability of 0.5 as the decision boundary for concluding the predicted diagnosis.  This is the typical value used as a cutoff in logistic regression.
 
 3) In the section on page 865 “Reference data set (AD1F2) for the best gene combinations” describe the type of modeling/model selection they are considering. Supplement table 5 contains more details of the results of this process.
 
-All of the 511 possible biomarker combinations were fit as models and compared using ROC curves.  68 models which were "well-behaved" TODO in logistic regression and had ROC AUC values higher than 0.90 were retained for use on the test set.
+All of the 511 possible biomarker combinations were fit as models and compared using ROC curves.  68 models which were "well-behaved" (this probably means that they excluded models with separation issues, but the paper does not specify) in logistic regression and had ROC AUC values higher than 0.90 were retained for use on the test set.
 
 4) Describe what they are doing in the section “Prospective (Blind) test” starting on page 864. Use terminology from JWHT.
 
@@ -79,12 +81,11 @@ require(pander)
 
 ret.tab <- table(ret)
 # emphasize.strong.cells(which.max(ret.tab, arr.ind=T))
-emphasize.strong.cols(1)
-# TODO fix this
+emphasize.strong.cols(c(1,3))
 pander(ret.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
 ```
 
-Based on 100 recursive partitions (results in Table 1), it seems that trees of size 2 (one split) and size 6 (5 splits) would be appropriate for this data in obtaining the min-CV.
+Based on 100 recursive partitions (results in Table 1), it seems that trees of size 2 (one split) and size 6 (5 splits) would be appropriate for these data in obtaining the min-CV.
 
 
 6) Based on these results, choose two different sized trees that could be reasonable based on the different CV selections. Report a plot of your two pruned classification trees using the partykit’s plot(as.party(PRUNEDTREENAME)). Discuss the differences in the two trees.
@@ -100,6 +101,8 @@ plot(as.party(tree1p))
 plot(as.party(tree2p))
 ```
 The size 6 (or 5 splits) tree has four more splits than the size 2 tree.  Both start with a split on PF4 at 6.373, but the second tree contains four splits on LAMC1 (11.665), IKBKAP (9.389), MAFB (7.794) and EGR1 (8.485) in that order on the branch the tree corresponding to PF4 values less than 6.373. While both trees have produced impure classifications, purity is generally higher in the 5-split tree.
+
+\pagebreak
 
 7) Adjust the following code as needed to make a plot of the predictions from the three models. Use these results to discuss the differences in these approaches/results. I had models called tree1p, tree2p, and glm1.
 
@@ -145,7 +148,11 @@ pander(exp.tab, caption="Proportion of predicted diagnoses models using untransf
 
 ```
 
+\pagebreak
+
 Part 2: Use the following code to identify an optimal predictive model for first year college GPAs. The following code will split out half the observations into a training data set and fit two different conditional inference trees using all available predictors. It also fits a recursive partitioning tree. 
+
+
 
 9) Prune the tree using the 1SE and Min CV rules (either from a single 10-fold CV run or select a tree size for each as a consensus that you build from multiple CV runs). 
 
@@ -183,7 +190,10 @@ A call to __plotcp()__ on one tree fit suggests that a tree size of 4 should be 
 mcv.tab <- table(mcv.sizes)
 ose.tab <- table(ose.sizes)
 
+emphasize.strong.cols(c(3,4))
 pander(mcv.tab, caption="Tree sizes that produced min-CV error out of 100 recursive partitions")
+
+emphasize.strong.cols(c(3))
 pander(ose.tab, caption="Tree sizes determined by the 1-SE rule out of 100 recursive partitions")
 
 gpa.ose <-rpart(FYGPA~.,data=satGPA,cp=3e-02)
@@ -240,12 +250,33 @@ Problem 6:
 ```{r a6, ref.label='p6_a', eval=F, echo=T}
 ```
 
+\pagebreak
+
+Problem 7:
+```{r a7, ref.label='p7_a', eval=F, echo=T}
+```
+
+```{r a7b, ref.label='p7_b', eval=F, echo=T}
+```
+
 Problem 8:
 ```{r a8, ref.label='p8_a', eval=F, echo=T}
 ```
 
+```{r a8b, ref.label='p8_b', eval=F, echo=T}
+```
+
 Problem 9:
 ```{r a9, ref.label='p9_a', eval=F, echo=T}
+```
+
+```{r a9b, ref.label='p9_b', eval=F, echo=T}
+```
+
+```{r a9c, ref.label='p9_c', eval=F, echo=T}
+```
+
+```{r a9d, ref.label='p9_d', eval=F, echo=T}
 ```
 
 Problem 10:
